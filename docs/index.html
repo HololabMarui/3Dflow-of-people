@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CZML ランチャー</title>
+  <style>
+    :root {
+      --bg1: #fff9fc;
+      --bg2: #eef7ff;
+      --ink: #2d2940;
+      --muted: #6f6987;
+      --card: rgba(255,255,255,0.82);
+      --line: #e8def4;
+      --accent: #ff5ea8;
+      --accent2: #7c67ff;
+      --good: #12b886;
+      --shadow: 0 18px 42px rgba(89, 70, 170, 0.14);
+      --radius: 24px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Meiryo", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 0% 0%, #ffdbe9 0, transparent 30%),
+        radial-gradient(circle at 100% 0%, #dff1ff 0, transparent 28%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      min-height: 100vh;
+      padding: 28px 16px 40px;
+    }
+    .wrap { max-width: 1260px; margin: 0 auto; }
+    .hero { margin-bottom: 20px; }
+    .hero h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 42px); line-height: 1.08; }
+    .hero p { margin: 0; color: var(--muted); line-height: 1.7; font-size: 15px; }
+    .layout { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 18px; }
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.75);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+    .card h2 { margin: 0 0 14px; font-size: 18px; }
+    .card h3 { margin: 18px 0 10px; font-size: 15px; }
+    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    .preset {
+      position: relative;
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 14px;
+      align-items: stretch;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 14px;
+      background: rgba(255,255,255,0.75);
+      cursor: pointer;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .preset:hover { transform: translateY(-1px); }
+    .preset.active {
+      border-color: #c9baff;
+      box-shadow: 0 10px 24px rgba(124,103,255,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(246,243,255,0.95));
+    }
+    .preset input { position: absolute; opacity: 0; pointer-events: none; }
+    .preset .tag {
+      display: flex; align-items: center; justify-content: center; min-height: 100%;
+      border-radius: 14px; background: rgba(124,103,255,0.11); color: var(--accent2);
+      font-weight: 700; font-size: 12px; width: 30px; min-width: 30px; padding: 8px 4px;
+      letter-spacing: 0.08em; writing-mode: vertical-rl; text-orientation: mixed;
+    }
+    .preset strong { display: block; font-size: 15px; line-height: 1.45; margin-bottom: 4px; font-weight: 700; }
+    .preset p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .row, .row-3 { display: grid; gap: 12px; }
+    .row { grid-template-columns: 1fr 1fr; }
+    .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field { margin-bottom: 14px; }
+    label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 750; margin-bottom: 8px; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+      font-size: 14px; color: var(--ink); background: rgba(255,255,255,0.95); outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #c9baff; box-shadow: 0 0 0 4px rgba(124,103,255,0.12); }
+    textarea { min-height: 360px; resize: vertical; font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .check {
+      display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid var(--line);
+      border-radius: 16px; background: rgba(255,255,255,0.78); font-size: 13px;
+    }
+    .check input { width: auto; margin: 0; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+    button { border: 0; border-radius: 999px; padding: 12px 18px; font-size: 14px; font-weight: 800; cursor: pointer; }
+    .primary { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 10px 24px rgba(255,94,168,0.24); }
+    .secondary { color: var(--ink); background: #fff; border: 1px solid var(--line); }
+    .preview-area, .summary-box, .script-box, .mini, .mode-panel {
+      margin-top: 14px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,0.74); border: 1px dashed var(--line);
+    }
+    .preview-area h3 { margin: 0 0 10px; font-size: 15px; }
+    .preview-frame {
+      aspect-ratio: 16 / 10; width: 100%; border-radius: 16px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(242,246,255,0.95)); display: block; overflow: hidden; padding: 8px;
+    }
+    .preview-frame img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; display: block; }
+    .preview-note, .mini, .script-box, .summary-box, .mode-panel { color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .summary-box ul { margin: 8px 0 0; padding-left: 18px; }
+    .status {
+      padding: 14px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(241,248,255,0.9));
+      border: 1px solid var(--line); margin-bottom: 14px;
+    }
+    .status strong { display: block; margin-bottom: 6px; font-size: 15px; }
+    .status p { margin: 0; color: var(--muted); line-height: 1.65; font-size: 13px; }
+    .tool-name {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; font-size: 13px;
+      font-weight: 600; color: var(--good); background: rgba(18,184,134,0.09); padding: 10px 14px; border-radius: 999px;
+      border: 1px solid rgba(18,184,134,0.16); text-decoration: none;
+    }
+    .tooltip {
+      position: relative; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+      border-radius: 999px; background: rgba(124,103,255,0.12); color: var(--accent2); font-size: 11px; font-weight: 900; cursor: help;
+    }
+    .tooltip .tip {
+      position: absolute; left: 50%; top: calc(100% + 10px); transform: translateX(-50%); width: 300px;
+      padding: 10px 12px; border-radius: 14px; background: #2e2940; color: #fff; font-size: 12px; font-weight: 500; line-height: 1.55;
+      opacity: 0; visibility: hidden; transition: .15s ease; box-shadow: 0 12px 24px rgba(0,0,0,0.18); z-index: 9999; pointer-events: none;
+    }
+    .tooltip:hover .tip, .tooltip:focus-within .tip { opacity: 1; visibility: visible; }
+    .tooltip .tip::before {
+      content: ""; position: absolute; left: 50%; top: -6px; width: 12px; height: 12px; background: #2e2940;
+      transform: translateX(-50%) rotate(45deg); border-radius: 2px;
+    }
+    code.inline { background: rgba(124,103,255,0.09); padding: 2px 6px; border-radius: 8px; }
+    .hidden { display: none; }
+    @media (max-width: 980px) { .layout, .preset-grid, .row, .row-3, .checks { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>CZML ランチャー</h1>
+      <p>filtered_czml 系3本と、高さで線の色が変わる HEIGHT_HATcolor_HAEpos.py を1ページで扱える静的HTMLです。モードに応じて必要な入力欄とコマンドを切り替えます。</p>
+    </div>
+
+    <div class="layout">
+      <section class="card">
+        <h2>1. 出力モードを選ぶ</h2>
+        <div class="preset-grid" id="modeGrid">
+          <label class="preset active" data-mode="base">
+            <input type="radio" name="mode" value="base" checked>
+            <span class="tag">静的</span>
+            <div>
+              <strong>filtered_czml.py</strong>
+              <p>まず条件に合うデータを絞って、軽めのCZMLを出したい時向けです。trailなしで結果確認を優先します。</p>
+            </div>
+          </label>
+          <label class="preset" data-mode="trail">
+            <input type="radio" name="mode" value="trail">
+            <span class="tag">軌跡</span>
+            <div>
+              <strong>filtered_czml_trail.py</strong>
+              <p>動く軌跡を見たい時向けです。trail付きで動線確認をしやすくします。</p>
+            </div>
+          </label>
+          <label class="preset" data-mode="trail_desc">
+            <input type="radio" name="mode" value="trail_desc">
+            <span class="tag">詳細</span>
+            <div>
+              <strong>filtered_czml_trail_description.py</strong>
+              <p>trailに加え、InfoBoxを時系列 description で見たい時向けです。最も情報量が多い最終版です。</p>
+            </div>
+          </label>
+          <label class="preset" data-mode="height_hat_hae">
+            <input type="radio" name="mode" value="height_hat_hae">
+            <span class="tag">帯色</span>
+            <div>
+              <strong>HEIGHT_HATcolor_HAEpos.py</strong>
+              <p>HAEで位置を描きつつ、HATで高さ帯の線色を変える最終版です。高さで線色が変わる表現を使いたい時はこちらです。</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="mode-panel" id="filterModeNote">
+          <strong>対話式フィルタ系</strong><br>
+          下の抽出条件は <code class="inline">filtered_czml.py</code> / <code class="inline">filtered_czml_trail.py</code> / <code class="inline">filtered_czml_trail_description.py</code> の3本で共通です。HTMLは <code class="inline">input()</code> に流し込む回答列を生成します。
+        </div>
+
+        <h2>2. 共通設定</h2>
+        <div class="row">
+          <div class="field">
+            <label for="inputCsv">入力CSV
+              <span class="tooltip" tabindex="0">?<span class="tip">HEIGHT_HATcolor_HAEpos.py で使用します。filtered_czml 系3本はフォルダ内のCSV群を自動で拾うので、この欄は使いません。</span></span>
+            </label>
+            <input id="inputCsv" type="text" value="sample.csv">
+          </div>
+          <div class="field">
+            <label for="outputName">出力名 / out-prefix
+              <span class="tooltip" tabindex="0">?<span class="tip">HEIGHT_HATcolor_HAEpos.py では <code>--out-prefix</code> に使います。filtered_czml 系はスクリプト側で自動命名されます。</span></span>
+            </label>
+            <input id="outputName" type="text" value="sample_output">
+          </div>
+        </div>
+
+        <div id="filterFields">
+          <h2>3. 抽出条件（filtered_czml 系）</h2>
+          <div class="row-3">
+            <div class="field">
+              <label for="workerMode">対象区分</label>
+              <select id="workerMode">
+                <option value="0">0: 来街者のみ</option>
+                <option value="1">1: 定期滞留者</option>
+                <option value="2">2: 両方</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="genderMode">性別</label>
+              <select id="genderMode">
+                <option value="0">0: 女性</option>
+                <option value="1">1: 男性</option>
+                <option value="2">2: 両方</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="dayFilter">曜日</label>
+              <select id="dayFilter">
+                <option value="0">0: すべて</option>
+                <option value="1">1: 平日</option>
+                <option value="2">2: 土日</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="ages">年代コード</label>
+              <input id="ages" type="text" value="20,30,40,50,60">
+            </div>
+            <div class="field">
+              <label for="stayCodes">滞在カテゴリ</label>
+              <input id="stayCodes" type="text" value="1,2,3,4">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="hourRange">時間帯</label>
+              <input id="hourRange" type="text" value="7-23">
+            </div>
+            <div class="field">
+              <label for="railways">路線</label>
+              <input id="railways" type="text" value="1,2,3,4,5,6">
+            </div>
+          </div>
+
+          <div class="checks">
+            <label class="check"><input id="mergeDates" type="checkbox"> 全日付を最初の1日にマージする</label>
+            <label class="check"><input id="writeCsv" type="checkbox"> 中間CSVも書き出す</label>
+          </div>
+        </div>
+
+        <div id="heightFields" class="hidden">
+          <h2>3. HEIGHT_HATcolor_HAEpos 設定</h2>
+          <div class="row">
+            <div class="field">
+              <label for="tz">タイムゾーン</label>
+              <input id="tz" type="text" value="Asia/Tokyo">
+            </div>
+            <div class="field">
+              <label for="clockAt">初期時計位置</label>
+              <select id="clockAt">
+                <option value="end">end</option>
+                <option value="start">start</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row-3">
+            <div class="field">
+              <label for="windowHours">window</label>
+              <input id="windowHours" type="text" value="7 23">
+            </div>
+            <div class="field">
+              <label for="pointSize">point-size</label>
+              <input id="pointSize" type="number" step="0.5" value="10">
+            </div>
+            <div class="field">
+              <label for="headPointSize">head-point-size</label>
+              <input id="headPointSize" type="number" step="0.5" value="10">
+            </div>
+          </div>
+
+          <div class="row-3">
+            <div class="field">
+              <label for="segWidth">seg-width</label>
+              <input id="segWidth" type="number" step="0.5" value="5">
+            </div>
+            <div class="field">
+              <label for="segAlpha">seg-alpha</label>
+              <input id="segAlpha" type="number" step="1" value="255">
+            </div>
+            <div class="field">
+              <label for="chunkHours">chunk-hours</label>
+              <input id="chunkHours" type="number" step="1" value="0">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="segDraw">seg-draw</label>
+              <select id="segDraw">
+                <option value="path">path</option>
+                <option value="polyline">polyline</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="segMode">seg-mode</label>
+              <select id="segMode">
+                <option value="span">span</option>
+                <option value="persist">persist</option>
+                <option value="flash">flash</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="bands">bands</label>
+            <input id="bands" type="text" value="-10 -5 0 5 18 24">
+          </div>
+
+          <div class="field">
+            <label for="bandColors">band-colors</label>
+            <input id="bandColors" type="text" value="#8c00ff #d000ff #ffffff #00ff65 #eeff00 #00e5ff">
+          </div>
+
+          <div class="row-3">
+            <div class="field">
+              <label for="autoBands">auto-bands</label>
+              <input id="autoBands" type="number" step="1" value="0">
+            </div>
+            <div class="field">
+              <label for="autoScope">auto-scope</label>
+              <select id="autoScope">
+                <option value="global">global</option>
+                <option value="chunk">chunk</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="bandsMethod">bands-method</label>
+              <select id="bandsMethod">
+                <option value="quantile">quantile</option>
+                <option value="minmax">minmax</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="idCol">id-col（任意）</label>
+              <input id="idCol" type="text" value="">
+            </div>
+            <div class="field">
+              <label for="latCol">lat-col（任意）</label>
+              <input id="latCol" type="text" value="">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="lonCol">lon-col（任意）</label>
+              <input id="lonCol" type="text" value="">
+            </div>
+            <div class="field">
+              <label for="timeCol">time-col（任意）</label>
+              <input id="timeCol" type="text" value="">
+            </div>
+          </div>
+
+          <div class="checks">
+            <label class="check"><input id="assumeNaive" type="checkbox"> assume-naive-as-local</label>
+            <label class="check"><input id="pointNoDepth" type="checkbox"> point-no-depth-test</label>
+            <label class="check"><input id="headPoint" type="checkbox" checked> head-point</label>
+            <label class="check"><input id="headNoDepth" type="checkbox"> head-no-depth-test</label>
+            <label class="check"><input id="keepAfterArrival" type="checkbox" checked> keep-after-arrival</label>
+            <label class="check"><input id="debugMode" type="checkbox"> debug を付ける</label>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="generateBtn">コマンド生成</button>
+          <button class="secondary" id="copyBtn">コピー</button>
+          <button class="secondary" id="exampleBtn">サンプル設定</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>出力</h2>
+
+        <div class="preview-area">
+          <h3>サンプル画像</h3>
+          <div class="preview-frame">
+            <img id="previewImage" src="./images/sample01.png" alt="サンプル画像">
+          </div>
+          <div class="preview-note" id="previewNote">選んだ出力モードに合わせて参考画像を切り替えます。</div>
+        </div>
+
+        <div class="status">
+          <strong id="statusTitle">filtered_czml.py</strong>
+          <p id="statusDesc">trailなしの基本版です。まず抽出条件が正しいかを軽く確認したい時に向きます。</p>
+          <a class="tool-name" id="toolName" href="./filtered_czml.py" download>使用スクリプト: filtered_czml.py</a>
+        </div>
+
+        <textarea id="commandOutput" readonly></textarea>
+
+        <div class="summary-box" id="summaryBox"></div>
+        <div class="script-box" id="whyBox"></div>
+
+        <div class="mini">
+          使い方:<br>
+          1. このHTMLと対象 Python 群、CSV を同じフォルダに置く<br>
+          2. 左でモードと条件を選ぶ<br>
+          3. 生成されたコマンドをターミナルに貼り付ける<br>
+          4. 出力された <code class="inline">*.czml</code> を確認する
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const MODES = {
+      base: {
+        family: 'filter',
+        script: 'filtered_czml.py',
+        title: 'filtered_czml.py',
+        desc: 'trailなしの基本版です。まず抽出条件が正しいかを軽く確認したい時に向きます。',
+        preview: './images/sample01.png',
+        previewNote: '静的な表示を確認する時の参考画像です。最初の当たりを付ける用途を想定しています。',
+        why: '軽く結果を見たい時はこの版が扱いやすいです。まず抽出条件が合っているかを確認し、その後trail付きへ進めます。'
+      },
+      trail: {
+        family: 'filter',
+        script: 'filtered_czml_trail.py',
+        title: 'filtered_czml_trail.py',
+        desc: 'trail付き版です。動線や移動感を見たい時に向きます。',
+        preview: './images/sample02.png',
+        previewNote: '軌跡の動きや trail の見え方を確認する時の参考画像です。',
+        why: '静的表示だけでは分かりにくい移動の連続感を見たい時はこちらが向いています。'
+      },
+      trail_desc: {
+        family: 'filter',
+        script: 'filtered_czml_trail_description.py',
+        title: 'filtered_czml_trail_description.py',
+        desc: 'trailに加え description も持つ詳細版です。クリック時の時系列情報を重視する時に向きます。',
+        preview: './images/sample03.png',
+        previewNote: 'trailに加えて InfoBox の情報量を重視する時の参考画像です。',
+        why: '時点ごとの情報を InfoBox で見たい場合はこの版が最も便利です。最終確認用に向いています。'
+      },
+      height_hat_hae: {
+        family: 'height',
+        script: 'HEIGHT_HATcolor_HAEpos.py',
+        title: 'HEIGHT_HATcolor_HAEpos.py',
+        desc: 'HAEで位置、HATで色判定を行う最終版です。高さで線の色が変わる表現を使いたい時に向きます。',
+        preview: './images/sample04.png',
+        previewNote: '高さ帯ごとに線色が変わる表示の参考画像です。HAE位置・HAT色分けの組み合わせを確認できます。',
+        why: '高さで線の色を変えたい時はこの版が本命です。位置はHAE、色判定はHAT優先なので、見た目と意味を両立しやすいです。'
+      }
+    };
+
+    function $(id){ return document.getElementById(id); }
+    function get(id){ return $(id).value.trim(); }
+    function checked(id){ return $(id).checked; }
+    function q(v){ return /[^A-Za-z0-9_./:-]/.test(v) ? JSON.stringify(v) : v; }
+    function currentMode(){ return document.querySelector('input[name="mode"]:checked').value; }
+    function currentSpec(){ return MODES[currentMode()]; }
+    function normalizeCsvList(text, fallback='all'){
+      const items = text.split(',').map(v => v.trim()).filter(Boolean);
+      return items.length ? items.join(',') : fallback;
+    }
+    function normalizeSpaceList(text, fallback=''){
+      const items = text.split(/\s+/).map(v => v.trim()).filter(Boolean);
+      return items.length ? items.join(' ') : fallback;
+    }
+    function appendOpt(parts, flag, value){
+      if (value !== '') parts.push(flag, q(value));
+    }
+    function appendSpaceList(parts, flag, value){
+      const items = value.split(/\s+/).map(v => v.trim()).filter(Boolean);
+      if (items.length) parts.push(flag, ...items.map(q));
+    }
+
+    function outputBaseName(){
+      const targetMap = { '0': '来街者', '1': '定期滞留者', '2': '両方' };
+      const genderMap = { '0': '女性', '1': '男性', '2': '女性-男性' };
+      const stayLabelMap = { '1': '駅ナカのみ滞在', '2': '西側滞在', '3': '東側滞在', '4': '東西回遊' };
+      const dayMap = { '0': 'すべて', '1': '平日', '2': '土日' };
+      const railMap = { '1': 'JR', '2': '東武鉄道', '3': '西武鉄道', '4': '丸ノ内線', '5': '有楽町線', '6': '副都心線' };
+      const ageToken = normalizeCsvList(get('ages'), '20,30,40,50,60').replace(/,/g, '-');
+      const stayToken = normalizeCsvList(get('stayCodes'), '1,2,3,4').split(',').map(v => stayLabelMap[v] || v).join('-');
+      const railToken = normalizeCsvList(get('railways'), '1,2,3,4,5,6').split(',').map(v => railMap[v] || v).join('-');
+      return [
+        targetMap[get('workerMode')] || '来街者',
+        genderMap[get('genderMode')] || '女性-男性',
+        ageToken,
+        stayToken,
+        dayMap[get('dayFilter')] || 'すべて',
+        get('hourRange') || '0-24',
+        railToken
+      ].join('_');
+    }
+
+    function buildFilterAnswers(){
+      return [
+        get('workerMode') || '0',
+        get('genderMode') || '2',
+        normalizeCsvList(get('ages'), 'all'),
+        normalizeCsvList(get('stayCodes'), 'all'),
+        get('dayFilter') || '0',
+        get('hourRange') || '0-24',
+        normalizeCsvList(get('railways'), 'all'),
+        checked('mergeDates') ? 'y' : 'n',
+        checked('writeCsv') ? '1' : ''
+      ];
+    }
+
+    function buildHeightCommand(){
+      const out = get('outputName') || 'sample_output';
+      const parts = ['python3', q('HEIGHT_HATcolor_HAEpos.py'), q(get('inputCsv') || 'sample.csv'), '--out-prefix', q(out)];
+      appendOpt(parts, '--tz', get('tz') || 'Asia/Tokyo');
+      const windowItems = normalizeSpaceList(get('windowHours'), '7 23').split(/\s+/).filter(Boolean);
+      if (windowItems.length >= 2) parts.push('--window', ...windowItems.slice(0, 2).map(q));
+      appendOpt(parts, '--clock-at', get('clockAt') || 'end');
+      appendSpaceList(parts, '--bands', normalizeSpaceList(get('bands'), '-10 -5 0 5 18 24'));
+      appendSpaceList(parts, '--band-colors', normalizeSpaceList(get('bandColors'), '#8c00ff #d000ff #ffffff #00ff65 #eeff00 #00e5ff'));
+      appendOpt(parts, '--seg-draw', get('segDraw') || 'path');
+      appendOpt(parts, '--seg-mode', get('segMode') || 'span');
+      appendOpt(parts, '--seg-width', get('segWidth') || '5');
+      appendOpt(parts, '--seg-alpha', get('segAlpha') || '255');
+      appendOpt(parts, '--point-size', get('pointSize') || '10');
+      if (checked('headPoint')) parts.push('--head-point');
+      appendOpt(parts, '--head-point-size', get('headPointSize') || '10');
+      if (checked('headNoDepth')) parts.push('--head-no-depth-test');
+      if (checked('pointNoDepth')) parts.push('--point-no-depth-test');
+      if (!checked('keepAfterArrival')) parts.push('--no-keep-after-arrival');
+      const autoBands = get('autoBands') || '0';
+      if (autoBands !== '0') {
+        appendOpt(parts, '--auto-bands', autoBands);
+        appendOpt(parts, '--auto-scope', get('autoScope') || 'global');
+        appendOpt(parts, '--bands-method', get('bandsMethod') || 'quantile');
+      }
+      appendOpt(parts, '--chunk-hours', get('chunkHours') || '0');
+      appendOpt(parts, '--id-col', get('idCol'));
+      appendOpt(parts, '--lat-col', get('latCol'));
+      appendOpt(parts, '--lon-col', get('lonCol'));
+      appendOpt(parts, '--time-col', get('timeCol'));
+      if (checked('assumeNaive')) parts.push('--assume-naive-as-local');
+      if (checked('debugMode')) parts.push('--debug');
+      return parts.join(' ');
+    }
+
+    function buildCommand(){
+      const spec = currentSpec();
+      if (spec.family === 'height') return buildHeightCommand();
+      const answers = buildFilterAnswers().join('\n');
+      return [
+        'python3 ' + q(spec.script) + " <<'EOF'",
+        answers,
+        'EOF'
+      ].join('\n');
+    }
+
+    function renderSummary(){
+      const spec = currentSpec();
+      if (spec.family === 'height') {
+        $('summaryBox').innerHTML = [
+          '<strong>入力サマリ（想定）</strong>',
+          '<ul>',
+          '<li>出力モード: ' + spec.title + '</li>',
+          '<li>入力CSV: ' + (get('inputCsv') || 'sample.csv') + '</li>',
+          '<li>out-prefix: <code class="inline">' + (get('outputName') || 'sample_output') + '</code></li>',
+          '<li>タイムゾーン / window: ' + (get('tz') || 'Asia/Tokyo') + ' / ' + normalizeSpaceList(get('windowHours'), '7 23') + '</li>',
+          '<li>bands: ' + normalizeSpaceList(get('bands'), '-10 -5 0 5 18 24') + '</li>',
+          '<li>band-colors: ' + normalizeSpaceList(get('bandColors'), '#8c00ff #d000ff #ffffff #00ff65 #eeff00 #00e5ff') + '</li>',
+          '<li>seg-draw / seg-mode: ' + (get('segDraw') || 'path') + ' / ' + (get('segMode') || 'span') + '</li>',
+          '<li>point / head / seg: ' + (get('pointSize') || '10') + ' / ' + (get('headPointSize') || '10') + ' / ' + (get('segWidth') || '5') + '</li>',
+          '<li>auto-bands / chunk-hours: ' + (get('autoBands') || '0') + ' / ' + (get('chunkHours') || '0') + '</li>',
+          '<li>assume-naive-as-local: ' + (checked('assumeNaive') ? 'on' : 'off') + '</li>',
+          '</ul>'
+        ].join('');
+        return;
+      }
+      $('summaryBox').innerHTML = [
+        '<strong>入力サマリ（想定）</strong>',
+        '<ul>',
+        '<li>出力モード: ' + spec.title + '</li>',
+        '<li>対象区分: ' + $('workerMode').selectedOptions[0].textContent + '</li>',
+        '<li>性別: ' + $('genderMode').selectedOptions[0].textContent + '</li>',
+        '<li>年代: ' + normalizeCsvList(get('ages'), 'all') + '</li>',
+        '<li>滞在カテゴリ: ' + normalizeCsvList(get('stayCodes'), 'all') + '</li>',
+        '<li>曜日: ' + $('dayFilter').selectedOptions[0].textContent + '</li>',
+        '<li>時間帯: ' + (get('hourRange') || '0-24') + '</li>',
+        '<li>路線: ' + normalizeCsvList(get('railways'), 'all') + '</li>',
+        '<li>日付マージ: ' + (checked('mergeDates') ? 'y' : 'n') + '</li>',
+        '<li>CSV出力: ' + (checked('writeCsv') ? '1' : 'Enterでスキップ') + '</li>',
+        '<li>想定CZML名: <code class="inline">' + outputBaseName() + '.czml</code></li>',
+        '</ul>'
+      ].join('');
+    }
+
+    function syncModeView(){
+      const spec = currentSpec();
+      const isParticle = spec.family === 'height';
+      $('statusTitle').textContent = spec.title;
+      $('statusDesc').textContent = spec.desc;
+      $('toolName').textContent = '使用スクリプト: ' + spec.script;
+      $('toolName').href = './' + spec.script;
+      $('toolName').setAttribute('download', spec.script);
+      $('previewImage').src = spec.preview;
+      $('previewImage').alt = spec.title + ' の参考画像';
+      $('previewNote').textContent = spec.previewNote;
+      $('whyBox').textContent = 'このモードを使う理由: ' + spec.why;
+      $('filterFields').classList.toggle('hidden', isParticle);
+      $('heightFields').classList.toggle('hidden', !isParticle);
+      $('filterModeNote').classList.toggle('hidden', isParticle);
+      document.querySelectorAll('.preset').forEach(card => card.classList.toggle('active', card.dataset.mode === currentMode()));
+    }
+
+    function render(){
+      syncModeView();
+      $('commandOutput').value = buildCommand();
+      renderSummary();
+    }
+
+    const reactiveIds = [
+      'inputCsv','outputName','workerMode','genderMode','dayFilter','ages','stayCodes','hourRange','railways','mergeDates','writeCsv',
+      'tz','clockAt','windowHours','pointSize','headPointSize','segWidth','segAlpha','chunkHours','segDraw','segMode','bands','bandColors','autoBands','autoScope','bandsMethod',
+      'idCol','latCol','lonCol','timeCol','assumeNaive','pointNoDepth','headPoint','headNoDepth','keepAfterArrival','debugMode'
+    ];
+
+    document.querySelectorAll('input[name="mode"]').forEach(radio => radio.addEventListener('change', render));
+    reactiveIds.forEach(id => {
+      const node = $(id);
+      if (!node) return;
+      const eventName = node.type === 'checkbox' || node.tagName === 'SELECT' ? 'change' : 'input';
+      node.addEventListener(eventName, render);
+    });
+
+    $('generateBtn').addEventListener('click', render);
+    $('copyBtn').addEventListener('click', async () => {
+      render();
+      try {
+        await navigator.clipboard.writeText($('commandOutput').value);
+        $('copyBtn').textContent = 'コピー完了';
+        setTimeout(() => $('copyBtn').textContent = 'コピー', 1200);
+      } catch {
+        $('commandOutput').select();
+        document.execCommand('copy');
+      }
+    });
+
+    $('exampleBtn').addEventListener('click', () => {
+      document.querySelector('input[name="mode"][value="height_hat_hae"]').checked = true;
+      $('inputCsv').value = 'sample.csv';
+      $('outputName').value = 'people_flow';
+      $('tz').value = 'Asia/Tokyo';
+      $('clockAt').value = 'end';
+      $('windowHours').value = '7 23';
+      $('pointSize').value = '10';
+      $('headPointSize').value = '10';
+      $('segWidth').value = '5';
+      $('segAlpha').value = '255';
+      $('chunkHours').value = '0';
+      $('segDraw').value = 'path';
+      $('segMode').value = 'span';
+      $('bands').value = '-10 -5 0 5 18 24';
+      $('bandColors').value = '#8c00ff #d000ff #ffffff #00ff65 #eeff00 #00e5ff';
+      $('autoBands').value = '0';
+      $('autoScope').value = 'global';
+      $('bandsMethod').value = 'quantile';
+      $('assumeNaive').checked = false;
+      $('pointNoDepth').checked = false;
+      $('headPoint').checked = true;
+      $('headNoDepth').checked = false;
+      $('keepAfterArrival').checked = true;
+      $('debugMode').checked = true;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
