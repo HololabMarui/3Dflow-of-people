@@ -9,29 +9,23 @@ from uuid import uuid4
 from flask import Flask, jsonify, render_template, request
 from werkzeug.utils import secure_filename
 
+# 想定配置:
+# docs/
+#   app.py
+#   csv_to_czml_hae.py
+#   templates/
+#     index.html
+#   uploads/
+#   outputs/
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / 'uploads'
 OUTPUT_DIR = BASE_DIR / 'outputs'
-
-
-def resolve_script_path() -> Path:
-    candidates = [
-        BASE_DIR / 'csv_to_czml_hae.py',
-        BASE_DIR.parent / 'csv_to_czml_hae.py',
-        Path('/mnt/data/csv_to_czml_hae.py'),
-    ]
-    for path in candidates:
-        if path.exists():
-            return path
-    return candidates[0]
-
-
-SCRIPT_PATH = resolve_script_path()
+SCRIPT_PATH = BASE_DIR / 'csv_to_czml_hae.py'
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=str(BASE_DIR / 'templates'))
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
 
 
@@ -56,8 +50,11 @@ def index():
 def health():
     return jsonify({
         'ok': True,
+        'base_dir': str(BASE_DIR),
         'script_found': SCRIPT_PATH.exists(),
         'script_path': str(SCRIPT_PATH),
+        'template_dir': str(BASE_DIR / 'templates'),
+        'template_found': (BASE_DIR / 'templates' / 'index.html').exists(),
         'python': sys.executable,
     })
 
@@ -90,11 +87,7 @@ def run_converter():
     if not SCRIPT_PATH.exists():
         return jsonify({
             'ok': False,
-            'error': (
-                '変換スクリプトが見つかりません。 '\
-                'app.py と同じフォルダ、または1つ上のフォルダに '\
-                'csv_to_czml_hae.py を置いてください。'
-            ),
+            'error': '変換スクリプトが見つかりません。docs/app.py と同じ階層に csv_to_czml_hae.py を置いてください。',
             'script_path': str(SCRIPT_PATH),
         }), 500
 
