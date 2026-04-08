@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CZML ランチャー</title>
+  <title>3D人流CSV→CZML ランチャー</title>
   <style>
     :root {
       --bg1: #fff9fc;
@@ -131,6 +131,17 @@
       content: ""; position: absolute; left: 50%; top: -6px; width: 12px; height: 12px; background: #2e2940;
       transform: translateX(-50%) rotate(45deg); border-radius: 2px;
     }
+    .caution-box {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 248, 230, 0.95);
+      border: 1px solid rgba(245, 176, 65, 0.45);
+      color: #6b4e16;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .caution-box strong { display: block; margin-bottom: 6px; color: #8a5a00; }
     code.inline { background: rgba(124,103,255,0.09); padding: 2px 6px; border-radius: 8px; }
     .hidden { display: none; }
     @media (max-width: 980px) { .layout, .preset-grid, .row, .row-3, .checks { grid-template-columns: 1fr; } }
@@ -139,7 +150,7 @@
 <body>
   <div class="wrap">
     <div class="hero">
-      <h1>CZML ランチャー</h1>
+      <h1>3D人流CSV→CZML ランチャー</h1>
       <p>filtered_czml 系3本と、高さで線の色が変わる HEIGHT_HATcolor_HAEpos.py を1ページで扱える静的HTMLです。モードに応じて必要な入力欄とコマンドを切り替えます。</p>
     </div>
 
@@ -233,11 +244,15 @@
 
           <div class="row">
             <div class="field">
-              <label for="ages">年代コード</label>
+              <label for="ages">年代コード
+                <span class="tooltip" tabindex="0">?<span class="tip">20, 30, 40, 50, 60をカンマ区切りで年代コードを選択（空/allで全て）</span></span>
+              </label>
               <input id="ages" type="text" value="20,30,40,50,60">
             </div>
             <div class="field">
-              <label for="stayCodes">滞在カテゴリ</label>
+              <label for="stayCodes">滞在カテゴリ
+                <span class="tooltip" tabindex="0">?<span class="tip">入力する数字はカンマ区切りです。<br>1: 駅ナカのみ滞在<br>2: 西側滞在<br>3: 東側滞在<br>4: 東西回遊</span></span>
+              </label>
               <input id="stayCodes" type="text" value="1,2,3,4">
             </div>
           </div>
@@ -248,7 +263,9 @@
               <input id="hourRange" type="text" value="7-23">
             </div>
             <div class="field">
-              <label for="railways">路線</label>
+              <label for="railways">路線
+                <span class="tooltip" tabindex="0">?<span class="tip">入力する数字はカンマ区切りです。<br>1: JR<br>2: 東武鉄道<br>3: 西武鉄道<br>4: 丸ノ内線<br>5: 有楽町線<br>6: 副都心線</span></span>
+              </label>
               <input id="railways" type="text" value="1,2,3,4,5,6">
             </div>
           </div>
@@ -292,29 +309,29 @@
 
           <div class="row-3">
             <div class="field">
-              <label for="segWidth">seg-width</label>
+              <label for="segWidth">seg-width <span class="tooltip" tabindex="0">?<span class="tip">線分の太さです。値を大きくすると高さ帯カラーの変化が見やすくなりますが、重なりも強くなります。</span></span></label>
               <input id="segWidth" type="number" step="0.5" value="5">
             </div>
             <div class="field">
-              <label for="segAlpha">seg-alpha</label>
+              <label for="segAlpha">seg-alpha <span class="tooltip" tabindex="0">?<span class="tip">線の透明度です。0〜255で指定します。255に近いほどはっきり表示され、低いほど透けます。</span></span></label>
               <input id="segAlpha" type="number" step="1" value="255">
             </div>
             <div class="field">
-              <label for="chunkHours">chunk-hours</label>
+              <label for="chunkHours">chunk-hours <span class="tooltip" tabindex="0">?<span class="tip">出力を時間単位で分割する設定です。<code>0</code> なら全期間を1つのCZMLに出力し、<code>6</code> などを入れると時間ごとに複数ファイルへ分けます。</span></span></label>
               <input id="chunkHours" type="number" step="1" value="0">
             </div>
           </div>
 
           <div class="row">
             <div class="field">
-              <label for="segDraw">seg-draw</label>
+              <label for="segDraw">seg-draw <span class="tooltip" tabindex="0">?<span class="tip"><code>path</code> はアニメ的に線が伸び、<code>polyline</code> は固定線として表示されます。迷ったら <code>path</code> のままで大丈夫です。</span></span></label>
               <select id="segDraw">
                 <option value="path">path</option>
                 <option value="polyline">polyline</option>
               </select>
             </div>
             <div class="field">
-              <label for="segMode">seg-mode</label>
+              <label for="segMode">seg-mode <span class="tooltip" tabindex="0">?<span class="tip"><code>span</code> は区間中だけ表示、<code>persist</code> は到達後も保持、<code>flash</code> は短時間だけ表示します。</span></span></label>
               <select id="segMode">
                 <option value="span">span</option>
                 <option value="persist">persist</option>
@@ -335,20 +352,20 @@
 
           <div class="row-3">
             <div class="field">
-              <label for="autoBands">auto-bands</label>
+              <label for="autoBands">auto-bands <span class="tooltip" tabindex="0">?<span class="tip">高さ帯の境界を自動計算したい時の分割数です。<code>0</code> なら手入力の bands を使い、<code>5</code> などを入れるとデータから自動計算します。</span></span></label>
               <input id="autoBands" type="number" step="1" value="0">
             </div>
             <div class="field">
-              <label for="autoScope">auto-scope</label>
+              <label for="autoScope">auto-scope <span class="tooltip" tabindex="0">?<span class="tip">auto-bands の計算範囲です。<br><code>global</code>: 全期間をまとめて計算<br><code>chunk</code>: 分割出力ごとに計算</span></span></label>
               <select id="autoScope">
-                <option value="global">global</option>
+                <option value="global">global（全期間共通）</option>
                 <option value="chunk">chunk</option>
               </select>
             </div>
             <div class="field">
-              <label for="bandsMethod">bands-method</label>
+              <label for="bandsMethod">bands-method <span class="tooltip" tabindex="0">?<span class="tip">auto-bands の計算法です。<br><code>quantile</code>: データ量が均等になるように分ける<br><code>minmax</code>: 最小値〜最大値を等間隔に分ける</span></span></label>
               <select id="bandsMethod">
-                <option value="quantile">quantile</option>
+                <option value="quantile">quantile（分位で分割）</option>
                 <option value="minmax">minmax</option>
               </select>
             </div>
@@ -356,33 +373,41 @@
 
           <div class="row">
             <div class="field">
-              <label for="idCol">id-col（任意）</label>
+              <label for="idCol">id-col（任意） <span class="tooltip" tabindex="0">?<span class="tip">端末ID列名を自動判定できない時だけ指定します。例: <code>deviceID</code>。通常は空欄で構いません。</span></span></label>
               <input id="idCol" type="text" value="">
             </div>
             <div class="field">
-              <label for="latCol">lat-col（任意）</label>
+              <label for="latCol">lat-col（任意） <span class="tooltip" tabindex="0">?<span class="tip">緯度列名を自動判定できない時だけ指定します。例: <code>latitude</code>。通常は空欄で構いません。</span></span></label>
               <input id="latCol" type="text" value="">
             </div>
           </div>
           <div class="row">
             <div class="field">
-              <label for="lonCol">lon-col（任意）</label>
+              <label for="lonCol">lon-col（任意） <span class="tooltip" tabindex="0">?<span class="tip">経度列名を自動判定できない時だけ指定します。例: <code>longitude</code>。通常は空欄で構いません。</span></span></label>
               <input id="lonCol" type="text" value="">
             </div>
             <div class="field">
-              <label for="timeCol">time-col（任意）</label>
+              <label for="timeCol">time-col（任意） <span class="tooltip" tabindex="0">?<span class="tip">時刻列名を自動判定できない時だけ指定します。例: <code>log_ts</code>。通常は空欄で構いません。</span></span></label>
               <input id="timeCol" type="text" value="">
             </div>
           </div>
 
           <div class="checks">
-            <label class="check"><input id="assumeNaive" type="checkbox"> assume-naive-as-local</label>
-            <label class="check"><input id="pointNoDepth" type="checkbox"> point-no-depth-test</label>
-            <label class="check"><input id="headPoint" type="checkbox" checked> head-point</label>
-            <label class="check"><input id="headNoDepth" type="checkbox"> head-no-depth-test</label>
-            <label class="check"><input id="keepAfterArrival" type="checkbox" checked> keep-after-arrival</label>
-            <label class="check"><input id="debugMode" type="checkbox"> debug を付ける</label>
+            <label class="check"><input id="assumeNaive" type="checkbox"> assume-naive-as-local <span class="tooltip" tabindex="0">?<span class="tip">タイムゾーン情報のない時刻をローカル時刻として解釈します。CSVの時刻がJST前提なのにタイムゾーンが付いていない場合に使います。</span></span></label>
+            <label class="check"><input id="pointNoDepth" type="checkbox"> point-no-depth-test <span class="tooltip" tabindex="0">?<span class="tip">サンプル点が建物や地形の裏に入っても見えるようにします。点が埋もれて見えにくい時に有効です。</span></span></label>
+            <label class="check"><input id="headPoint" type="checkbox" checked> head-point <span class="tooltip" tabindex="0">?<span class="tip">各区間の先端点を表示します。どこまで進んでいるかが分かりやすくなります。</span></span></label>
+            <label class="check"><input id="headNoDepth" type="checkbox"> head-no-depth-test <span class="tooltip" tabindex="0">?<span class="tip">先端点を常に見やすくする設定です。head-point を使う時に、点が隠れて困る場合にオンにします。</span></span></label>
+            <label class="check"><input id="keepAfterArrival" type="checkbox" checked> keep-after-arrival <span class="tooltip" tabindex="0">?<span class="tip">区間線が到達後も残る設定です。移動の履歴を残して見たい時はオンのまま使います。オフにすると区間線は到達後に消えます。</span></span></label>
+            <label class="check"><input id="debugMode" type="checkbox"> debug を付ける <span class="tooltip" tabindex="0">?<span class="tip">読み込んだ時刻範囲、座標範囲、高度範囲、自動バンド結果などをターミナルへ出します。うまく出ない時の確認用です。</span></span></label>
           </div>
+        </div>
+
+        <div class="caution-box hidden" id="heightCaution">
+          <strong>HEIGHT_HATcolor_HAEpos.py を使う前の注意</strong>
+          このスクリプトは <code class="inline">pandas</code> を使用します。実行環境に <code class="inline">pandas</code> が入っていないと、
+          <code class="inline">ModuleNotFoundError: No module named 'pandas'</code> が出ます。<br>
+          その場合は、先に <code class="inline">python3 -m pip install pandas pytz</code> を実行してください。<br>
+          この注意は 4つ目の <code class="inline">HEIGHT_HATcolor_HAEpos.py</code> を選んだ時だけ表示されます。
         </div>
 
         <div class="actions">
@@ -620,6 +645,7 @@
       $('filterFields').classList.toggle('hidden', isParticle);
       $('heightFields').classList.toggle('hidden', !isParticle);
       $('filterModeNote').classList.toggle('hidden', isParticle);
+      $('heightCaution').classList.toggle('hidden', !isParticle);
       document.querySelectorAll('.preset').forEach(card => card.classList.toggle('active', card.dataset.mode === currentMode()));
     }
 
